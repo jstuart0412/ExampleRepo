@@ -37,11 +37,16 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Create X-Dev branch if not exists
+      - name: Create or update X-Dev branch
         run: |
           git fetch origin
           if git ls-remote --heads origin ${{ steps.setup.outputs.dev_branch }} | grep -q ${{ steps.setup.outputs.dev_branch }}; then
-            echo "Branch ${{ steps.setup.outputs.dev_branch }} already exists"
+            echo "Branch ${{ steps.setup.outputs.dev_branch }} already exists, updating it"
+            git checkout ${{ steps.setup.outputs.dev_branch }}
+            git pull origin ${{ steps.setup.outputs.dev_branch }}
+            git merge origin/${{ steps.setup.outputs.branch_name }} --no-edit
+            git push origin ${{ steps.setup.outputs.dev_branch }}
+            echo "Updated branch ${{ steps.setup.outputs.dev_branch }}"
           else
             git checkout -b ${{ steps.setup.outputs.dev_branch }} origin/develop
             git merge origin/${{ steps.setup.outputs.branch_name }} --no-edit
@@ -49,11 +54,16 @@ jobs:
             echo "Created branch ${{ steps.setup.outputs.dev_branch }}"
           fi
 
-      - name: Create X-Staging branch if not exists
+      - name: Create or update X-Staging branch
         run: |
           git fetch origin
           if git ls-remote --heads origin ${{ steps.setup.outputs.staging_branch }} | grep -q ${{ steps.setup.outputs.staging_branch }}; then
-            echo "Branch ${{ steps.setup.outputs.staging_branch }} already exists"
+            echo "Branch ${{ steps.setup.outputs.staging_branch }} already exists, updating it"
+            git checkout ${{ steps.setup.outputs.staging_branch }}
+            git pull origin ${{ steps.setup.outputs.staging_branch }}
+            git merge origin/${{ steps.setup.outputs.branch_name }} --no-edit
+            git push origin ${{ steps.setup.outputs.staging_branch }}
+            echo "Updated branch ${{ steps.setup.outputs.staging_branch }}"
           else
             git checkout -b ${{ steps.setup.outputs.staging_branch }} origin/staging
             git merge origin/${{ steps.setup.outputs.branch_name }} --no-edit
