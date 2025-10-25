@@ -1,0 +1,90 @@
+name: Main Mergeback PRs
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-mergeback-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create MergeBackDev branch and PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin
+          
+          # Create or update MergeBackDev branch
+          if git ls-remote --heads origin MergeBackDev | grep -q MergeBackDev; then
+            git checkout MergeBackDev
+            git pull origin MergeBackDev
+            git merge origin/main --no-edit
+            git push origin MergeBackDev
+            echo "Updated MergeBackDev branch"
+          else
+            git checkout -b MergeBackDev
+            git push origin MergeBackDev
+            echo "Created MergeBackDev branch"
+          fi
+          
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head MergeBackDev --base develop --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --title "[MergeBackDev] Merge main back to develop" \
+              --body "Auto-generated PR to merge main changes back to develop" \
+              --head MergeBackDev \
+              --base develop
+            echo "Created PR from MergeBackDev to develop"
+          else
+            echo "PR from MergeBackDev to develop already exists (#$EXISTING_PR)"
+          fi
+
+      - name: Create MergeBackStaging branch and PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin
+          
+          # Create or update MergeBackStaging branch
+          if git ls-remote --heads origin MergeBackStaging | grep -q MergeBackStaging; then
+            git checkout MergeBackStaging
+            git pull origin MergeBackStaging
+            git merge origin/main --no-edit
+            git push origin MergeBackStaging
+            echo "Updated MergeBackStaging branch"
+          else
+            git checkout main
+            git checkout -b MergeBackStaging
+            git push origin MergeBackStaging
+            echo "Created MergeBackStaging branch"
+          fi
+          
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head MergeBackStaging --base staging --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --title "[MergeBackStaging] Merge main back to staging" \
+              --body "Auto-generated PR to merge main changes back to staging" \
+              --head MergeBackStaging \
+              --base staging
+            echo "Created PR from MergeBackStaging to staging"
+          else
+            echo "PR from MergeBackStaging to staging already exists (#$EXISTING_PR)"
+          fi
+
+      - name: Log completion
+        run: |
+          echo "Messaged Teams"
