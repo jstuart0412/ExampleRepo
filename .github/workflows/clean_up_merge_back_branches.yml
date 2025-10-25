@@ -1,0 +1,22 @@
+name: Cleanup Mergeback Branches
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - develop
+      - staging
+
+permissions:
+  contents: write
+
+jobs:
+  delete-mergeback-branch:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete MergeBackDev or MergeBackStaging branch
+        if: github.event.pull_request.head.ref == 'MergeBackDev' || github.event.pull_request.head.ref == 'MergeBackStaging'
+        run: |
+          git push origin --delete ${{ github.event.pull_request.head.ref }}
+          echo "Deleted branch ${{ github.event.pull_request.head.ref }}"
