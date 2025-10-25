@@ -75,55 +75,79 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Check if PR already exists
-          EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.dev_branch }} --base develop --json number --jq '.[0].number')
+          # Check if there are differences
+          git fetch origin
+          DIFF_COUNT=$(git rev-list --count origin/develop..origin/${{ steps.setup.outputs.dev_branch }})
           
-          if [ -z "$EXISTING_PR" ]; then
-            gh pr create \
-              --title "[${{ steps.setup.outputs.dev_branch }}] Merge to develop" \
-              --body "Auto-generated draft PR from ${{ steps.setup.outputs.dev_branch }} to develop" \
-              --head ${{ steps.setup.outputs.dev_branch }} \
-              --base develop \
-              --draft
-            echo "Created draft PR from ${{ steps.setup.outputs.dev_branch }} to develop"
+          if [ "$DIFF_COUNT" -eq "0" ]; then
+            echo "No changes between ${{ steps.setup.outputs.dev_branch }} and develop, skipping PR creation"
           else
-            echo "PR from ${{ steps.setup.outputs.dev_branch }} to develop already exists (#$EXISTING_PR)"
+            # Check if PR already exists
+            EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.dev_branch }} --base develop --json number --jq '.[0].number')
+            
+            if [ -z "$EXISTING_PR" ]; then
+              gh pr create \
+                --title "[${{ steps.setup.outputs.dev_branch }}] Merge to develop" \
+                --body "Auto-generated draft PR from ${{ steps.setup.outputs.dev_branch }} to develop" \
+                --head ${{ steps.setup.outputs.dev_branch }} \
+                --base develop \
+                --draft
+              echo "Created draft PR from ${{ steps.setup.outputs.dev_branch }} to develop"
+            else
+              echo "PR from ${{ steps.setup.outputs.dev_branch }} to develop already exists (#$EXISTING_PR)"
+            fi
           fi
 
       - name: Create draft PR from X-Staging to staging
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Check if PR already exists
-          EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.staging_branch }} --base staging --json number --jq '.[0].number')
+          # Check if there are differences
+          git fetch origin
+          DIFF_COUNT=$(git rev-list --count origin/staging..origin/${{ steps.setup.outputs.staging_branch }})
           
-          if [ -z "$EXISTING_PR" ]; then
-            gh pr create \
-              --title "[${{ steps.setup.outputs.staging_branch }}] Merge to staging" \
-              --body "Auto-generated draft PR from ${{ steps.setup.outputs.staging_branch }} to staging" \
-              --head ${{ steps.setup.outputs.staging_branch }} \
-              --base staging \
-              --draft
-            echo "Created draft PR from ${{ steps.setup.outputs.staging_branch }} to staging"
+          if [ "$DIFF_COUNT" -eq "0" ]; then
+            echo "No changes between ${{ steps.setup.outputs.staging_branch }} and staging, skipping PR creation"
           else
-            echo "PR from ${{ steps.setup.outputs.staging_branch }} to staging already exists (#$EXISTING_PR)"
+            # Check if PR already exists
+            EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.staging_branch }} --base staging --json number --jq '.[0].number')
+            
+            if [ -z "$EXISTING_PR" ]; then
+              gh pr create \
+                --title "[${{ steps.setup.outputs.staging_branch }}] Merge to staging" \
+                --body "Auto-generated draft PR from ${{ steps.setup.outputs.staging_branch }} to staging" \
+                --head ${{ steps.setup.outputs.staging_branch }} \
+                --base staging \
+                --draft
+              echo "Created draft PR from ${{ steps.setup.outputs.staging_branch }} to staging"
+            else
+              echo "PR from ${{ steps.setup.outputs.staging_branch }} to staging already exists (#$EXISTING_PR)"
+            fi
           fi
 
       - name: Create draft PR from X to main
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Check if PR already exists
-          EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.branch_name }} --base main --json number --jq '.[0].number')
+          # Check if there are differences
+          git fetch origin
+          DIFF_COUNT=$(git rev-list --count origin/main..origin/${{ steps.setup.outputs.branch_name }})
           
-          if [ -z "$EXISTING_PR" ]; then
-            gh pr create \
-              --title "[${{ steps.setup.outputs.branch_name }}] Merge to main" \
-              --body "Auto-generated draft PR from ${{ steps.setup.outputs.branch_name }} to main" \
-              --head ${{ steps.setup.outputs.branch_name }} \
-              --base main \
-              --draft
-            echo "Created draft PR from ${{ steps.setup.outputs.branch_name }} to main"
+          if [ "$DIFF_COUNT" -eq "0" ]; then
+            echo "No changes between ${{ steps.setup.outputs.branch_name }} and main, skipping PR creation"
           else
-            echo "PR from ${{ steps.setup.outputs.branch_name }} to main already exists (#$EXISTING_PR)"
+            # Check if PR already exists
+            EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.branch_name }} --base main --json number --jq '.[0].number')
+            
+            if [ -z "$EXISTING_PR" ]; then
+              gh pr create \
+                --title "[${{ steps.setup.outputs.branch_name }}] Merge to main" \
+                --body "Auto-generated draft PR from ${{ steps.setup.outputs.branch_name }} to main" \
+                --head ${{ steps.setup.outputs.branch_name }} \
+                --base main \
+                --draft
+              echo "Created draft PR from ${{ steps.setup.outputs.branch_name }} to main"
+            else
+              echo "PR from ${{ steps.setup.outputs.branch_name }} to main already exists (#$EXISTING_PR)"
+            fi
           fi
