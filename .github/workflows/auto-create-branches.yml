@@ -6,6 +6,10 @@ on:
       - develop
       - staging
       - main
+      - MergeBackDev
+      - MergeBackStaging
+      - '*-Dev'
+      - '*-Staging'
 
 permissions:
   contents: write
