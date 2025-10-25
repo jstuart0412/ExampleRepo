@@ -1,0 +1,109 @@
+name: Auto Create Branches and PRs
+
+on:
+  push:
+    branches-ignore:
+      - develop
+      - staging
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-branches-and-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup branch names
+        id: setup
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "dev_branch=${BRANCH_NAME}-Dev" >> $GITHUB_OUTPUT
+          echo "staging_branch=${BRANCH_NAME}-Staging" >> $GITHUB_OUTPUT
+
+      - name: Create X-Dev branch if not exists
+        run: |
+          git fetch origin
+          if git ls-remote --heads origin ${{ steps.setup.outputs.dev_branch }} | grep -q ${{ steps.setup.outputs.dev_branch }}; then
+            echo "Branch ${{ steps.setup.outputs.dev_branch }} already exists"
+          else
+            git checkout -b ${{ steps.setup.outputs.dev_branch }}
+            git push origin ${{ steps.setup.outputs.dev_branch }}
+            echo "Created branch ${{ steps.setup.outputs.dev_branch }}"
+          fi
+
+      - name: Create X-Staging branch if not exists
+        run: |
+          git fetch origin
+          if git ls-remote --heads origin ${{ steps.setup.outputs.staging_branch }} | grep -q ${{ steps.setup.outputs.staging_branch }}; then
+            echo "Branch ${{ steps.setup.outputs.staging_branch }} already exists"
+          else
+            git checkout ${{ steps.setup.outputs.branch_name }}
+            git checkout -b ${{ steps.setup.outputs.staging_branch }}
+            git push origin ${{ steps.setup.outputs.staging_branch }}
+            echo "Created branch ${{ steps.setup.outputs.staging_branch }}"
+          fi
+
+      - name: Create draft PR from X-Dev to develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.dev_branch }} --base develop --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --title "[${{ steps.setup.outputs.dev_branch }}] Merge to develop" \
+              --body "Auto-generated draft PR from ${{ steps.setup.outputs.dev_branch }} to develop" \
+              --head ${{ steps.setup.outputs.dev_branch }} \
+              --base develop \
+              --draft
+            echo "Created draft PR from ${{ steps.setup.outputs.dev_branch }} to develop"
+          else
+            echo "PR from ${{ steps.setup.outputs.dev_branch }} to develop already exists (#$EXISTING_PR)"
+          fi
+
+      - name: Create draft PR from X-Staging to staging
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.staging_branch }} --base staging --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --title "[${{ steps.setup.outputs.staging_branch }}] Merge to staging" \
+              --body "Auto-generated draft PR from ${{ steps.setup.outputs.staging_branch }} to staging" \
+              --head ${{ steps.setup.outputs.staging_branch }} \
+              --base staging \
+              --draft
+            echo "Created draft PR from ${{ steps.setup.outputs.staging_branch }} to staging"
+          else
+            echo "PR from ${{ steps.setup.outputs.staging_branch }} to staging already exists (#$EXISTING_PR)"
+          fi
+
+      - name: Create draft PR from X to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head ${{ steps.setup.outputs.branch_name }} --base main --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --title "[${{ steps.setup.outputs.branch_name }}] Merge to main" \
+              --body "Auto-generated draft PR from ${{ steps.setup.outputs.branch_name }} to main" \
+              --head ${{ steps.setup.outputs.branch_name }} \
+              --base main \
+              --draft
+            echo "Created draft PR from ${{ steps.setup.outputs.branch_name }} to main"
+          else
+            echo "PR from ${{ steps.setup.outputs.branch_name }} to main already exists (#$EXISTING_PR)"
+          fi
